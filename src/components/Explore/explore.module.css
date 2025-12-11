@@ -1,0 +1,154 @@
+/* Explore page styles (mobile-first) */
+.root {
+  padding: 16px;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial;
+  color: #0f172a;
+}
+.header {
+  margin-bottom: 12px;
+}
+.title {
+  margin: 0 0 4px 0;
+  font-size: 18px;
+}
+.subtitle {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+.controls {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+  align-items: center;
+}
+.btn {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: none;
+  background: #e2e8f0;
+  color: #0f172a;
+  cursor: pointer;
+  font-weight: 600;
+}
+.btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.secondary {
+  background: #f8fafc;
+}
+.primary {
+  background: #2563eb;
+  color: white;
+}
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 0, 0, 0.08);
+  border-top-color: #2563eb;
+  margin-right: 8px;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.errorLine {
+  margin: 12px 0;
+  color: #b91c1c;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.results {
+  margin-top: 12px;
+}
+.resultsHeader {
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+.networks {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.network {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #eef2f7;
+  margin-bottom: 8px;
+  background: white;
+}
+.network:focus {
+  outline: 2px solid #c7d2fe;
+}
+.selected {
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+.netMain {
+  display: flex;
+  flex-direction: column;
+}
+.ssid {
+  font-weight: 600;
+}
+.meta {
+  font-size: 12px;
+  color: #6b7280;
+}
+.rssiContainer {
+  width: 80px;
+  height: 10px;
+  background: #f1f5f9;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.rssiBar {
+  height: 100%;
+  background: linear-gradient(90deg, #60a5fa, #2563eb);
+  transition: width 220ms ease;
+}
+.connect {
+  margin-top: 16px;
+}
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+}
+.label {
+  font-size: 12px;
+  color: #374151;
+  margin-bottom: 4px;
+}
+.actions {
+  margin-top: 8px;
+}
+.serverMsg {
+  margin-top: 8px;
+  color: #064e3b;
+  background: #ecfdf5;
+  padding: 8px;
+  border-radius: 6px;
+}
+@media (min-width: 720px) {
+  .controls {
+    gap: 12px;
+  }
+  .networks {
+    max-width: 720px;
+  }
+}

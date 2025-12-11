@@ -1,0 +1,53 @@
+.root {
+  position: relative;
+}
+
+.mainBtn {
+  padding: 0.5rem 0.25rem;
+  background-color: transparent;
+  outline: none;
+  border: 1px solid transparent;
+  border-radius: 0.25rem;
+  line-height: 0;
+  opacity: 0.5;
+  color: gray;
+  transition: all linear 192ms;
+  cursor: pointer;
+}
+
+.mainBtn.active {
+  opacity: 1;
+  border-color: gray;
+}
+
+.dropdownAction {
+  width: max-content;
+  background-color: white;
+  padding: 0.5rem;
+  box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+  position: absolute;
+  bottom: -0.25rem;
+  right: -0.75rem;
+  border-radius: 0.25rem;
+  transform: translateY(100%);
+}
+
+.menu {
+  list-style-type: none;
+  padding-inline-start: 0;
+  display: flex;
+  flex-direction: column;
+  row-gap: 0.3rem;
+}
+
+.actionBtn {
+  width: 100%;
+  background-color: transparent;
+  padding-block: 0.5rem;
+  padding-inline: 1rem;
+  border: 1px solid gray;
+}
+
+.dialog {
+  z-index: 1;
+}

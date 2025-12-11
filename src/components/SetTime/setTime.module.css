@@ -1,0 +1,83 @@
+.root {
+  margin-top: 2rem;
+  padding: 0.75rem 0.5rem;
+  border-radius: 0.25rem;
+  border: 1px solid grey;
+}
+
+.heading {
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  margin-top: 0;
+}
+
+.timeForm {
+  display: grid;
+  align-items: center;
+  grid-template-columns: 1fr auto;
+}
+
+.timeForm input[type="number"] {
+  max-width: 3.5rem;
+}
+
+.timeDisplay {
+  display: flex;
+  align-items: center;
+  column-gap: 0.25rem;
+}
+
+.delimiter {
+  grid-column-start: 1;
+  grid-column-end: 3;
+  padding-top: 0.5rem;
+}
+
+.explain {
+  justify-content: center;
+  padding: 0;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.realTimeLabel,
+.realTimeDate,
+.realTimeHour,
+.saveBtn {
+  justify-self: self-end;
+}
+
+.realTimeLabel {
+  color: green;
+}
+
+.currentTimePreview {
+  margin-top: 0.5rem;
+  color: gray;
+  font-style: italic;
+}
+
+.timezoneWrapper {
+  padding-top: 0.5rem;
+  grid-column-start: 1;
+  grid-column-end: 3;
+  display: flex;
+  column-gap: 2rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.timezoneSelection {
+  max-width: 70%;
+  padding-block: 2px;
+}
+
+@media (min-width: 48rem) {
+  .root {
+    padding: 1rem 1rem;
+  }
+
+  .timezoneSelection {
+    max-width: 20rem;
+  }
+}

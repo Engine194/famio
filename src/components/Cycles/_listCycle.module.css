@@ -1,0 +1,115 @@
+.root {
+  --padding-inline-local: 0.5rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  padding-inline-start: 0;
+  margin-block: 0;
+}
+
+.action {
+  float: right;
+  right: calc(var(--padding-inline-local) / 2);
+  top: 0.2rem;
+}
+
+.cycle {
+  list-style-type: none;
+  height: 100%;
+  align-items: stretch;
+  border: 1px solid grey;
+  border-radius: 0.25rem;
+}
+
+.cycle:has(div.action > button.dropdownActive) {
+  background-color: whitesmoke;
+}
+
+.cycleStatus {
+  padding-inline: var(--padding-inline-local);
+  padding-block: 0.75rem 0.5rem;
+  display: flex;
+  align-items: center;
+  column-gap: 0.5rem;
+  justify-content: space-between;
+}
+
+.status {
+  font-weight: bold;
+  font-size: large;
+}
+
+.statusLabel {
+  font-weight: bold;
+  font-size: large;
+}
+
+.clock {
+  padding-inline: var(--padding-inline-local);
+  padding-bottom: calc(var(--padding-inline-local) / 2);
+}
+
+.clock > p {
+  margin-block: 0.5rem;
+}
+
+.days {
+  list-style-type: none;
+  padding-inline: var(--padding-inline-local);
+  flex-wrap: wrap;
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+  justify-content: start;
+}
+
+.day {
+  border-top: 5px solid transparent;
+  padding-block: 0.25rem;
+}
+
+.day.active {
+  border-top-color: inherit;
+}
+
+.fanSetting {
+  padding-top: 0.5rem;
+  padding-inline: var(--padding-inline-local);
+  padding-bottom: var(--padding-inline-local);
+  display: flex;
+  align-items: center;
+  column-gap: 0.25rem;
+  justify-content: space-between;
+}
+
+.fanEnable,
+.fanDelay {
+  display: flex;
+  align-items: center;
+  column-gap: 0.25rem;
+}
+
+.fanStatus {
+  font-weight: bold;
+}
+
+.fanIcon {
+  width: 1.375rem;
+  height: 1.375rem;
+  object-fit: contain;
+}
+
+@media (min-width: 48rem) {
+  .root {
+    --padding-inline-local: 1rem;
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+
+  .action {
+    top: 0.35rem;
+  }
+
+  .cycleStatus {
+    padding-block-start: 1rem;
+  }
+}

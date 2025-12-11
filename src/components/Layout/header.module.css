@@ -1,0 +1,72 @@
+.container {
+  max-width: 48rem;
+  padding-inline: 1rem;
+  margin-inline: auto;
+}
+
+.header {
+  padding-block: 0.75rem;
+  background-color: whitesmoke;
+}
+
+.header > .container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  column-gap: 0.5rem;
+}
+
+.logoWrapper {
+  display: flex;
+  align-items: center;
+  column-gap: 0.5rem;
+}
+
+.logoTitle {
+  font-size: larger;
+}
+
+.logo {
+  max-width: 3rem;
+  max-height: 3rem;
+}
+
+h1 {
+  font-size: 1.25em;
+  font-weight: medium;
+}
+
+.languages {
+  display: flex;
+  align-items: center;
+  column-gap: 0.25rem;
+}
+
+.languageItem {
+  min-width: 2.25rem;
+  font-weight: bold;
+  opacity: 0.8;
+  font-size: 1rem;
+  padding: 0.25rem 0.25rem;
+}
+
+.languageItem.active {
+  opacity: 1;
+}
+
+@media (min-width: 48rem) {
+  .header {
+    padding-block: 0.5rem;
+    column-gap: 1rem;
+  }
+
+  .logo {
+    max-width: 4rem;
+    max-height: 4rem;
+  }
+
+  h1 {
+    font-size: 1.5em;
+    font-weight: medium;
+  }
+}

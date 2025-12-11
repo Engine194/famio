@@ -1,0 +1,8 @@
+export const TIME_COMPONENT_ENUMS = {
+  YEAR: "YEAR",
+  MONTH: "MONTH",
+  DAY: "DAY",
+  HOUR: "HOUR",
+  MINUTE: "MINUTE",
+  SECOND: "SECOND",
+};

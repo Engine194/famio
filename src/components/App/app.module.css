@@ -1,0 +1,11 @@
+.heading {
+  font-size: 1.25em;
+  font-weight: medium;
+}
+
+@media (min-width: 48rem) {
+  .heading {
+    font-size: 1.5em;
+    font-weight: medium;
+  }
+}
