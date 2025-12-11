@@ -86,6 +86,15 @@
   gap: 8px;
   align-items: center;
 }
+
+.controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  justify-content: space-between;
+}
+
 .results {
   margin-top: 12px;
 }
@@ -211,8 +220,18 @@
   margin-top: 8px;
   color: #064e3b;
   background: #ecfdf5;
-  padding: 8px;
+  padding: 10px 12px;
   border-radius: 6px;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.serverMsg a {
+  color: #059669;
+  text-decoration: underline;
+  font-weight: 600;
 }
 @media (min-width: 720px) {
   .controls {

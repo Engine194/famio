@@ -23,12 +23,16 @@ export default function Explore() {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [restartCountdown, setRestartCountdown] = useState(null); // null or number
+  const [rebooting, setRebooting] = useState(false);
+  const [rebootSuccess, setRebootSuccess] = useState(false);
 
   const firstScanRef = useRef(false);
   const abortRef = useRef(null);
   const intervalRef = useRef(null);
   const timeoutRef = useRef(null);
   const passwordRef = useRef(null);
+  const countdownRef = useRef(null);
 
   // Using shared fetchRequest helper from src/utils/api.js
 
@@ -97,7 +101,9 @@ export default function Explore() {
         )
           return;
         clearPolling();
-        setError(err.message || "Scan failed");
+        setError(
+          err.message || t({ id: "explore.scanFailed", mask: "Scan failed" })
+        );
         setStatus("error");
       }
     }, POLL_INTERVAL_MS);
@@ -106,9 +112,14 @@ export default function Explore() {
       if (abortRef.current) abortRef.current.abort();
       clearPolling();
       setStatus("error");
-      setError("Scan timed out. Please try again.");
+      setError(
+        t({
+          id: "explore.scanTimeout",
+          mask: "Scan timed out. Please try again.",
+        })
+      );
     }, SCAN_TIMEOUT_MS);
-  }, [handleScanJson]);
+  }, [handleScanJson, t]);
 
   // Start scan: call once then poll if needed
   const startScan = useCallback(async () => {
@@ -139,10 +150,13 @@ export default function Explore() {
     } catch (err) {
       if (err.name === "AbortError") return;
       clearPolling();
-      setError(err.message || "Failed to start scan");
+      setError(
+        err.message ||
+          t({ id: "explore.failedStartScan", mask: "Failed to start scan" })
+      );
       setStatus("error");
     }
-  }, [dispatch, handleScanJson, startPolling]);
+  }, [dispatch, handleScanJson, startPolling, t]);
 
   const selectNetwork = useCallback((ssid) => {
     setSelectedSsid(ssid);
@@ -165,6 +179,23 @@ export default function Explore() {
         setSubmitting(false);
         return;
       }
+      const defaultMsg = t({id: "explore.configSaved", mask: "Config saved. Restarting device to continue."})
+      const handleRetry = async (err) => {
+        console.log("err.message...", err.message);
+        if (err.message.includes("timeout")) {
+          const status = await fetchRequest({
+            src: "/wifi/status",
+            method: "GET",
+          }).catch(() => false);
+          const { isOperational } = status || {};
+          if (isOperational) {
+            setRestartCountdown(10);
+            setServerMessage(defaultMsg);
+          }
+          return !!isOperational;
+        }
+        return false;
+      };
       try {
         const res = await fetchRequest({
           src: "/wifi/config",
@@ -172,19 +203,47 @@ export default function Explore() {
           payload: { ssid: selectedSsid, pass: password },
           timeout: 15000,
         });
-        setServerMessage(res.message || JSON.stringify(res));
         if (res.status === "success") {
-          // device will restart
-          setServerMessage(res.message || "Device restarting...");
+          // device will restart - start countdown for manual reset
+          setRestartCountdown(10);
+          setServerMessage(res.message || defaultMsg)
+          setSubmitting(false);
         }
       } catch (err) {
-        setError(err.message || "Submit failed");
+        let max_attempt = 3;
+        while (max_attempt === 0 || !(await handleRetry(err))) {
+          max_attempt--;
+        }
+        if (max_attempt >= 0) return;
+        setError(
+          err.message ||
+            t({ id: "explore.submitFailed", mask: "Submit failed" })
+        );
       } finally {
         setSubmitting(false);
       }
     },
     [t, password, selectedSsid]
   );
+
+  const handleSystemReset = useCallback(async () => {
+    setRebooting(true);
+    try {
+      await fetchRequest({
+        src: "/system/reset",
+        method: "POST",
+        timeout: 15000,
+      });
+      setRestartCountdown(null);
+      setRebootSuccess(true);
+      setPassword("");
+    } catch (err) {
+      setError(
+        err.message || t({ id: "explore.resetFailed", mask: "Reset failed" })
+      );
+      setRebooting(false);
+    }
+  }, [t]);
 
   useEffect(() => {
     if (!firstScanRef.current) {
@@ -194,6 +253,37 @@ export default function Explore() {
       firstScanRef.current = true;
     }
   }, [startScan]);
+
+  // Countdown timer for restart button
+  useEffect(() => {
+    if (restartCountdown === null || restartCountdown <= 0) {
+      if (countdownRef.current) {
+        clearInterval(countdownRef.current);
+        countdownRef.current = null;
+      }
+      if (restartCountdown === 0) {
+        // Auto-trigger reset when countdown reaches 0
+        handleSystemReset();
+      }
+      return;
+    }
+
+    countdownRef.current = setInterval(() => {
+      setRestartCountdown((prev) => {
+        if (prev === null || prev <= 1) {
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      if (countdownRef.current) {
+        clearInterval(countdownRef.current);
+        countdownRef.current = null;
+      }
+    };
+  }, [restartCountdown, handleSystemReset]);
 
   useEffect(() => {
     return () => {
@@ -231,11 +321,44 @@ export default function Explore() {
             t({ id: "explore.rescan", mask: "Rescan" })
           )}
         </button>
+        {restartCountdown !== null && (
+          <button
+            className={`${classes.btn} ${classes.secondary}`}
+            onClick={handleSystemReset}
+            disabled={rebooting}
+          >
+            {rebooting
+              ? t({ id: "explore.rebooting", mask: "Rebooting..." })
+              : t({ id: "explore.restart", mask: "Restart" })}{" "}
+            ({restartCountdown}s)
+          </button>
+        )}
       </div>
 
       {status === "error" && (
         <div className={classes.errorLine} role="alert">
           <div>{error}</div>
+        </div>
+      )}
+      {rebootSuccess && (
+        <div className={classes.serverMsg}>
+          <>
+            {t({ id: "explore.rebooting", mask: "System is rebooting..." })}
+            <br />
+            {t({
+              id: "explore.connectWifi",
+              mask: "Connect to the selected WiFi network and click {0} to continue",
+              values: [
+                <a
+                  href="http://famio.local"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {t({ id: "explore.here", mask: "here" })}
+                </a>,
+              ],
+            })}
+          </>
         </div>
       )}
 
@@ -285,6 +408,7 @@ export default function Explore() {
                     <form
                       className={classes.formInline}
                       onSubmit={handleSubmit}
+                      onClick={(e) => e.stopPropagation()}
                     >
                       <input
                         ref={passwordRef}
@@ -306,18 +430,11 @@ export default function Explore() {
                         <div className={classes.errorInline}>{error}</div>
                       )}
                       <div className={classes.passwordControls}>
-                        <label
-                          onClick={(e) => {
-                            e.stopPropagation();
-                          }}
-                          className={classes.checkboxLabel}
-                        >
+                        <label className={classes.checkboxLabel}>
                           <input
                             type="checkbox"
                             checked={showPassword}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                            }}
+                            disabled={rebooting || submitting}
                             onChange={(e) => setShowPassword(e.target.checked)}
                             title={t({
                               id: "explore.togglePasswordTitle",
@@ -337,10 +454,7 @@ export default function Explore() {
                         <button
                           className={`${classes.btn} ${classes.primary}`}
                           type="submit"
-                          disabled={submitting || !selectedSsid}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                          }}
+                          disabled={submitting || !selectedSsid || rebooting}
                         >
                           {submitting
                             ? t({
