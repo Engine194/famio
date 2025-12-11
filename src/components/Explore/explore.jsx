@@ -22,6 +22,7 @@ export default function Explore() {
   const [selectedSsid, setSelectedSsid] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const firstScanRef = useRef(false);
   const abortRef = useRef(null);
@@ -89,7 +90,12 @@ export default function Explore() {
         handleScanJson(json);
       } catch (err) {
         if (err.name === "AbortError") return;
-        if (err.name === "TypeError" && err.message.include("fetch")) return;
+        if (
+          err.name === "TypeError" &&
+          typeof err.message === "string" &&
+          err.message.includes("fetch")
+        )
+          return;
         clearPolling();
         setError(err.message || "Scan failed");
         setStatus("error");
@@ -140,6 +146,10 @@ export default function Explore() {
 
   const selectNetwork = useCallback((ssid) => {
     setSelectedSsid(ssid);
+    setServerMessage(null);
+    setError(null);
+    setPassword("");
+    setShowPassword(false);
     // small delay to ensure input available
     setTimeout(() => passwordRef.current && passwordRef.current.focus(), 60);
   }, []);
@@ -152,6 +162,8 @@ export default function Explore() {
       setSubmitting(true);
       if (!password) {
         setError(t({ id: "password.required", mask: "Password is required" }));
+        setSubmitting(false);
+        return;
       }
       try {
         const res = await fetchRequest({
@@ -191,7 +203,7 @@ export default function Explore() {
 
   return (
     <div className={classes.root}>
-      <header className={classes.header}>
+      <div className={classes.header}>
         <h2 className={classes.title}>
           {t({ id: "explore.title", mask: "Explore Wi-Fi" })}
         </h2>
@@ -201,7 +213,7 @@ export default function Explore() {
             mask: "Scan for networks and connect your device.",
           })}
         </p>
-      </header>
+      </div>
 
       <div className={classes.controls}>
         <button
@@ -224,9 +236,6 @@ export default function Explore() {
       {status === "error" && (
         <div className={classes.errorLine} role="alert">
           <div>{error}</div>
-          <button className={classes.btn} onClick={startScan}>
-            {t({ id: "explore.retry", mask: "Retry" })}
-          </button>
         </div>
       )}
 
@@ -270,62 +279,88 @@ export default function Explore() {
                     }}
                   />
                 </div>
+
+                {selectedSsid === n.ssid && (
+                  <div className={classes.inlineForm}>
+                    <form
+                      className={classes.formInline}
+                      onSubmit={handleSubmit}
+                    >
+                      <input
+                        ref={passwordRef}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        type={showPassword ? "text" : "password"}
+                        name="password"
+                        placeholder={t({
+                          id: "explore.passwordPlaceholder",
+                          mask: "Wi-Fi password",
+                        })}
+                        disabled={submitting}
+                        aria-label={t({
+                          id: "explore.passwordAria",
+                          mask: "Wi-Fi password",
+                        })}
+                      />
+                      {error && (
+                        <div className={classes.errorInline}>{error}</div>
+                      )}
+                      <div className={classes.passwordControls}>
+                        <label
+                          onClick={(e) => {
+                            e.stopPropagation();
+                          }}
+                          className={classes.checkboxLabel}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={showPassword}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                            }}
+                            onChange={(e) => setShowPassword(e.target.checked)}
+                            title={t({
+                              id: "explore.togglePasswordTitle",
+                              mask: "Show or hide password",
+                            })}
+                          />
+                          <span>
+                            {t({
+                              id: "explore.showPassword",
+                              mask: "Show password",
+                            })}
+                          </span>
+                        </label>
+                      </div>
+
+                      <div className={classes.inlineActions}>
+                        <button
+                          className={`${classes.btn} ${classes.primary}`}
+                          type="submit"
+                          disabled={submitting || !selectedSsid}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                          }}
+                        >
+                          {submitting
+                            ? t({
+                                id: "explore.submitting",
+                                mask: "Submitting...",
+                              })
+                            : t({ id: "explore.connect", mask: "Connect" })}
+                        </button>
+                      </div>
+                    </form>
+                    {serverMessage && (
+                      <div className={classes.serverMsg}>{serverMessage}</div>
+                    )}
+                  </div>
+                )}
               </li>
             ))}
           </ul>
         </section>
       )}
-
-      <section className={classes.connect}>
-        <form className={classes.form} onSubmit={handleSubmit}>
-          <label className={classes.field}>
-            <div className={classes.label}>
-              {t({ id: "explore.ssid", mask: "SSID" })}
-            </div>
-            <input
-              name="ssid"
-              value={selectedSsid}
-              readOnly
-              placeholder="Select a network"
-            />
-          </label>
-
-          <label className={classes.field}>
-            <div className={classes.label}>
-              {t({ id: "explore.password", mask: "Password" })}
-            </div>
-            <input
-              ref={passwordRef}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              type="password"
-              name="password"
-              placeholder={t({
-                id: "explore.passwordPlaceholder",
-                mask: "Wi-Fi password",
-              })}
-              disabled={!selectedSsid || submitting}
-              aria-label="Wi-Fi password"
-            />
-          </label>
-
-          <div className={classes.actions}>
-            <button
-              className={`${classes.btn} ${classes.primary}`}
-              type="submit"
-              disabled={!selectedSsid || submitting}
-            >
-              {submitting
-                ? t({ id: "explore.submitting", mask: "Submitting..." })
-                : t({ id: "explore.connect", mask: "Connect" })}
-            </button>
-          </div>
-        </form>
-
-        {serverMessage && (
-          <div className={classes.serverMsg}>{serverMessage}</div>
-        )}
-      </section>
     </div>
   );
 }
