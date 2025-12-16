@@ -6,7 +6,7 @@ import { STORE_ACTION_TYPES } from "../../contexts/actions";
 import { useI18nContext } from "../../contexts/i18nContext";
 
 // Constants (adjust if needed)
-const POLL_INTERVAL_MS = 2000; // 1s
+const POLL_INTERVAL_MS = 5000; // 5s
 const SCAN_TIMEOUT_MS = 35000; // 35s
 
 export default function Explore() {
@@ -66,6 +66,7 @@ export default function Explore() {
         list.sort((a, b) => b.rssi - a.rssi);
         dispatch({ type: STORE_ACTION_TYPES.SET_WIFI_NETWORKS, payload: list });
         setStatus("complete");
+        console.log('handleScanJson clearPolling ...');
         clearPolling();
       } else {
         setStatus("scanning");
@@ -171,6 +172,7 @@ export default function Explore() {
   const handleSubmit = useCallback(
     async (e) => {
       e && e.preventDefault();
+      if (!networks?.length) return;
       setServerMessage(null);
       setError(null);
       setSubmitting(true);
@@ -179,7 +181,10 @@ export default function Explore() {
         setSubmitting(false);
         return;
       }
-      const defaultMsg = t({id: "explore.configSaved", mask: "Config saved. Restarting device to continue."})
+      const defaultMsg = t({
+        id: "explore.configSaved",
+        mask: "Config saved. Restarting device to continue.",
+      });
       const handleRetry = async (err) => {
         console.log("err.message...", err.message);
         if (err.message.includes("timeout")) {
@@ -197,21 +202,27 @@ export default function Explore() {
         return false;
       };
       try {
+        const findSSID = networks.find(
+          ({ bssid }) => bssid === selectedSsid
+        )?.ssid;
+        if (!findSSID) return;
         const res = await fetchRequest({
           src: "/wifi/config",
           method: "POST",
-          payload: { ssid: selectedSsid, pass: password },
+          payload: { ssid: findSSID, pass: password },
           timeout: 15000,
         });
         if (res.status === "success") {
           // device will restart - start countdown for manual reset
           setRestartCountdown(10);
-          setServerMessage(res.message || defaultMsg)
+          setServerMessage(res.message || defaultMsg);
           setSubmitting(false);
         }
       } catch (err) {
         let max_attempt = 3;
-        while (max_attempt === 0 || !(await handleRetry(err))) {
+        while (max_attempt > 0) {
+          console.log("Attempt to retry: ", max_attempt);
+          if (await handleRetry(err)) return;
           max_attempt--;
         }
         if (max_attempt >= 0) return;
@@ -223,7 +234,7 @@ export default function Explore() {
         setSubmitting(false);
       }
     },
-    [t, password, selectedSsid]
+    [password, networks, selectedSsid, t]
   );
 
   const handleSystemReset = useCallback(async () => {
@@ -369,109 +380,114 @@ export default function Explore() {
             {t({ id: "explore.networks", mask: "networks" })}
           </div>
           <ul className={classes.networks}>
-            {networks.map((n, i) => (
-              <li
-                key={`${n.ssid}-${i}`}
-                role="button"
-                tabIndex={0}
-                className={`${classes.network} ${
-                  selectedSsid === n.ssid ? classes.selected : ""
-                }`}
-                onClick={() => selectNetwork(n.ssid)}
-                onKeyDown={(ev) => {
-                  if (ev.key === "Enter" || ev.key === " ") {
-                    ev.preventDefault();
-                    selectNetwork(n.ssid);
-                  }
-                }}
-              >
-                <div className={classes.netMain}>
-                  <div className={classes.ssid}>{n.ssid || "<hidden>"}</div>
-                  <div className={classes.meta}>
-                    Ch {n.channel} • RSSI {n.rssi}
+            {networks.map((n) => {
+              const isSelected = n.bssid === selectedSsid;
+              return (
+                <li
+                  key={`${n.bssid}`}
+                  role="button"
+                  tabIndex={0}
+                  className={`${classes.network} ${
+                    isSelected ? classes.selected : ""
+                  }`}
+                  onClick={() => selectNetwork(n.bssid)}
+                  onKeyDown={(ev) => {
+                    if (ev.key === "Enter" || ev.key === " ") {
+                      ev.preventDefault();
+                      selectNetwork(n.bssid);
+                    }
+                  }}
+                >
+                  <div className={classes.netMain}>
+                    <div className={classes.ssid}>{n.ssid || "<hidden>"}</div>
+                    <div className={classes.meta}>
+                      Ch {n.channel} • RSSI {n.rssi}
+                    </div>
                   </div>
-                </div>
-                <div className={classes.rssiContainer} aria-hidden>
-                  <div
-                    className={classes.rssiBar}
-                    style={{
-                      width: `${Math.max(
-                        0,
-                        Math.min(100, Math.round(((n.rssi + 100) / 70) * 100))
-                      )}%`,
-                    }}
-                  />
-                </div>
+                  <div className={classes.rssiContainer} aria-hidden>
+                    <div
+                      className={classes.rssiBar}
+                      style={{
+                        width: `${Math.max(
+                          0,
+                          Math.min(100, Math.round(((n.rssi + 100) / 70) * 100))
+                        )}%`,
+                      }}
+                    />
+                  </div>
 
-                {selectedSsid === n.ssid && (
-                  <div className={classes.inlineForm}>
-                    <form
-                      className={classes.formInline}
-                      onSubmit={handleSubmit}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <input
-                        ref={passwordRef}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        type={showPassword ? "text" : "password"}
-                        name="password"
-                        placeholder={t({
-                          id: "explore.passwordPlaceholder",
-                          mask: "Wi-Fi password",
-                        })}
-                        disabled={submitting}
-                        aria-label={t({
-                          id: "explore.passwordAria",
-                          mask: "Wi-Fi password",
-                        })}
-                      />
-                      {error && (
-                        <div className={classes.errorInline}>{error}</div>
+                  {isSelected && (
+                    <div className={classes.inlineForm}>
+                      <form
+                        className={classes.formInline}
+                        onSubmit={handleSubmit}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <input
+                          ref={passwordRef}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          type={showPassword ? "text" : "password"}
+                          name="password"
+                          placeholder={t({
+                            id: "explore.passwordPlaceholder",
+                            mask: "Wi-Fi password",
+                          })}
+                          disabled={submitting}
+                          aria-label={t({
+                            id: "explore.passwordAria",
+                            mask: "Wi-Fi password",
+                          })}
+                        />
+                        {error && (
+                          <div className={classes.errorInline}>{error}</div>
+                        )}
+                        <div className={classes.passwordControls}>
+                          <label className={classes.checkboxLabel}>
+                            <input
+                              type="checkbox"
+                              checked={showPassword}
+                              disabled={rebooting || submitting}
+                              onChange={(e) =>
+                                setShowPassword(e.target.checked)
+                              }
+                              title={t({
+                                id: "explore.togglePasswordTitle",
+                                mask: "Show or hide password",
+                              })}
+                            />
+                            <span>
+                              {t({
+                                id: "explore.showPassword",
+                                mask: "Show password",
+                              })}
+                            </span>
+                          </label>
+                        </div>
+
+                        <div className={classes.inlineActions}>
+                          <button
+                            className={`${classes.btn} ${classes.primary}`}
+                            type="submit"
+                            disabled={submitting || !selectedSsid || rebooting}
+                          >
+                            {submitting
+                              ? t({
+                                  id: "explore.submitting",
+                                  mask: "Submitting...",
+                                })
+                              : t({ id: "explore.connect", mask: "Connect" })}
+                          </button>
+                        </div>
+                      </form>
+                      {serverMessage && (
+                        <div className={classes.serverMsg}>{serverMessage}</div>
                       )}
-                      <div className={classes.passwordControls}>
-                        <label className={classes.checkboxLabel}>
-                          <input
-                            type="checkbox"
-                            checked={showPassword}
-                            disabled={rebooting || submitting}
-                            onChange={(e) => setShowPassword(e.target.checked)}
-                            title={t({
-                              id: "explore.togglePasswordTitle",
-                              mask: "Show or hide password",
-                            })}
-                          />
-                          <span>
-                            {t({
-                              id: "explore.showPassword",
-                              mask: "Show password",
-                            })}
-                          </span>
-                        </label>
-                      </div>
-
-                      <div className={classes.inlineActions}>
-                        <button
-                          className={`${classes.btn} ${classes.primary}`}
-                          type="submit"
-                          disabled={submitting || !selectedSsid || rebooting}
-                        >
-                          {submitting
-                            ? t({
-                                id: "explore.submitting",
-                                mask: "Submitting...",
-                              })
-                            : t({ id: "explore.connect", mask: "Connect" })}
-                        </button>
-                      </div>
-                    </form>
-                    {serverMessage && (
-                      <div className={classes.serverMsg}>{serverMessage}</div>
-                    )}
-                  </div>
-                )}
-              </li>
-            ))}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </section>
       )}
