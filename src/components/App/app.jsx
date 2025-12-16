@@ -13,9 +13,11 @@ function App() {
         {t({ id: "famio.dashboard", mask: "Welcome to Famio" })}
       </h1>
       <section>
-        <FmRadio/>
-        <ResetSystem/>
-        <ResetWifiConfig/>
+        <FmRadio />
+        <div className={classes.resetGroup}>
+          <ResetSystem />
+          <ResetWifiConfig />
+        </div>
       </section>
     </>
   );

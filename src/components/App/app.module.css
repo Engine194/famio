@@ -1,6 +1,16 @@
 .heading {
-  font-size: 1.25em;
+  font-size: x-large;
   font-weight: medium;
+  text-align: center;
+}
+
+.resetGroup {
+  margin-block-start: 4rem;
+  display: flex;
+  max-width: 500px;
+  margin-inline: auto;
+  justify-content: space-between;
+  column-gap: 4rem;
 }
 
 @media (min-width: 48rem) {

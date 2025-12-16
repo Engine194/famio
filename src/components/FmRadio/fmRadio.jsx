@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import classes from "./fmRadio.module.css";
 import { fetchRequest } from "../../utils";
 import { TbAntennaBars5, TbPlayerTrackNext, TbVolume } from "react-icons/tb";
@@ -10,6 +10,7 @@ import {
   FaTrashAlt,
 } from "react-icons/fa";
 import { FiRefreshCw, FiArrowUp, FiArrowDown } from "react-icons/fi";
+import { useI18nContext } from "../../contexts/i18nContext";
 
 // Định nghĩa các endpoints và METHOD chính xác
 const API_ENDPOINTS = {
@@ -23,8 +24,6 @@ const API_ENDPOINTS = {
   SET_FREQ: "/fm/setfreq", // <--- POST
   SAVE_CHANNEL: "/fm/save",
   SELECT_CHANNEL: "/fm/select",
-
-  // PATCH (Cập nhật một phần tài nguyên: Volume)
   VOLUME: "/fm/volume",
 
   // DELETE (Xóa tài nguyên)
@@ -32,6 +31,7 @@ const API_ENDPOINTS = {
 };
 
 export default function FmRadio() {
+  const t = useI18nContext();
   const [status, setStatus] = useState({
     freq: 99.5,
     volume: 10,
@@ -43,7 +43,9 @@ export default function FmRadio() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
-  console.log("status...", status);
+  const multiClickCountRef = useRef(0);
+  const multiClickTimerRef = useRef(null);
+
   const showMessage = useCallback((msg) => {
     setMessage(msg);
     setTimeout(() => setMessage(null), 3000);
@@ -119,7 +121,7 @@ export default function FmRadio() {
     }
   }, [status.isPowered, fetchData, handleError, showMessage]);
 
-  // 2. Tăng/Giảm Âm lượng -> PATCH
+  // 2. Tăng/Giảm Âm lượng -> POST
   const handleVolumeChange = useCallback(
     async (delta) => {
       if (!status.isPowered || loading) return;
@@ -128,10 +130,9 @@ export default function FmRadio() {
       newVolume = Math.min(15, Math.max(0, newVolume));
 
       try {
-        // Cập nhật Method thành PATCH
         await fetchRequest({
           src: `${API_ENDPOINTS.VOLUME}?level=${newVolume}`,
-          method: "PATCH",
+          method: "POST",
         });
         setStatus((prev) => ({ ...prev, volume: newVolume }));
       } catch (err) {
@@ -169,6 +170,36 @@ export default function FmRadio() {
     },
     [status.isPowered, status.freq, loading, handleError, showMessage]
   );
+
+  const handleMultiClickFreqUp = useCallback(() => {
+    if (multiClickTimerRef.current) {
+      clearTimeout(multiClickTimerRef.current);
+      multiClickCountRef.current++;
+    }
+    multiClickTimerRef.current = setTimeout(() => {
+      handleSetFrequency(
+        multiClickCountRef.current > 0 ? multiClickCountRef.current : 0.1
+      );
+      clearTimeout(multiClickTimerRef.current);
+      multiClickTimerRef.current = null;
+      multiClickCountRef.current = 0;
+    }, 500);
+  }, [handleSetFrequency]);
+
+  const handleMultiClickFreqDown = useCallback(() => {
+    if (multiClickTimerRef.current) {
+      clearTimeout(multiClickTimerRef.current);
+      multiClickCountRef.current++;
+    }
+    multiClickTimerRef.current = setTimeout(() => {
+      handleSetFrequency(
+        multiClickCountRef.current > 0 ? -multiClickCountRef.current : -0.1
+      );
+      clearTimeout(multiClickTimerRef.current);
+      multiClickTimerRef.current = null;
+      multiClickCountRef.current = 0;
+    }, 500);
+  }, [handleSetFrequency]);
 
   // 4. Dò kênh Tự động -> POST
   const handleSeek = useCallback(async () => {
@@ -262,9 +293,9 @@ export default function FmRadio() {
 
   return (
     <div className={classes.fmRadioContainer}>
-      <h2>Bảng Điều Khiển FM Radio</h2>
+      <h2>{t({id: "fm.dashboard.title", mask:"Bảng Điều Khiển FM Radio"})}</h2>
 
-      {loading && <div className={classes.loadingOverlay}>Đang tải...</div>}
+      {loading && <div className={classes.loadingOverlay}>{t({id: "fm.loading", mask: "Đang tải..."})}</div>}
 
       <div className={classes.displayArea}>
         <div className={classes.freqDisplay}>
@@ -291,10 +322,6 @@ export default function FmRadio() {
           </div>
         </div>
       </div>
-
-      {error && <div className={classes.error}>{error}</div>}
-      {message && <div className={classes.message}>{message}</div>}
-
       <div className={classes.controlPanel}>
         <div className={`${classes.controlGroup} ${classes.primaryControls}`}>
           <button
@@ -311,7 +338,7 @@ export default function FmRadio() {
 
           <button
             className={classes.actionButton}
-            onClick={() => handleSetFrequency(0.1)}
+            onClick={handleMultiClickFreqUp}
             disabled={!status.isPowered || loading || status.freq >= 108.0}
             title="Tăng tần số 0.1 MHz"
           >
@@ -319,7 +346,7 @@ export default function FmRadio() {
           </button>
           <button
             className={classes.actionButton}
-            onClick={() => handleSetFrequency(-0.1)}
+            onClick={handleMultiClickFreqDown}
             disabled={!status.isPowered || loading || status.freq <= 87.0}
             title="Giảm tần số 0.1 MHz"
           >
@@ -373,7 +400,8 @@ export default function FmRadio() {
           </button>
         </div>
       </div>
-
+      {error && <div className={classes.error}>{error}</div>}
+      {message && <div className={classes.message}>{message}</div>}
       <div className={classes.savedChannelsArea}>
         <h3>Kênh Đã Lưu ({savedChannels.length})</h3>
         <ul className={classes.channelsList}>

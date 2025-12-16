@@ -14,7 +14,7 @@ const ResetWifiConfig = () => {
   return (
     <div>
       <button type="button" onClick={handleReset}>
-        {t({ id: "reset.wifi.config", mask: "Reset Wifi Configuration" })}
+        {t({ id: "reset.wifi.config", mask: "Reset Wifi" })}
       </button>
     </div>
   );
